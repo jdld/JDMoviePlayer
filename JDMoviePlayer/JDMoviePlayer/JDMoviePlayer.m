@@ -9,11 +9,10 @@
 #import "JDMoviePlayer.h"
 
 @interface JDMoviePlayer(){
-    BOOL playState;
-    BOOL fullScreen;
-    BOOL flag;
-    BOOL tapFlag;
-    int MVindex;
+    BOOL playState; //播放状态
+    BOOL flag; //控制初始化时是否设定自动播放
+    BOOL tapFlag; //控制面板状态
+    int MVindex; //当前视频
 }
 @property (strong, nonatomic)NSArray *urlStr;
 
@@ -47,7 +46,6 @@
 //初始化常量
 - (void)setValue {
     playState = NO;
-    fullScreen = NO;
     flag = YES;
     tapFlag = YES;
     MVindex = 0;
@@ -184,14 +182,17 @@
 
 #pragma mark - 通知
 
+//添加监听通知
 - (void)addNotification {
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(playbackFinished:) name:AVPlayerItemDidPlayToEndTimeNotification object:self.player.currentItem];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(playbackBegin:) name:AVPlayerItemTimeJumpedNotification object:self.player.currentItem];
 }
 
+//移除监听通知
 - (void)removeNotification {
     [[NSNotificationCenter defaultCenter]removeObserver:self];
 }
+
 
 -(void)playbackFinished:(NSNotification *)notification{
     NSLog(@"视频播放完成.");
