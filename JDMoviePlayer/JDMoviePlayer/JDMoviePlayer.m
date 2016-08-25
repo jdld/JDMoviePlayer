@@ -13,6 +13,8 @@
     BOOL flag; //控制初始化时是否设定自动播放
     BOOL tapFlag; //控制面板状态
     int MVindex; //当前视频
+    float indexF; //时间偏移量
+    float oldPoint; //记忆左右移动位置
 }
 @property (strong, nonatomic)NSArray *urlStr;
 
@@ -49,6 +51,8 @@
     flag = YES;
     tapFlag = YES;
     MVindex = 0;
+    indexF = 0;
+    oldPoint = 0;
 }
 
 //初始化UI
@@ -225,6 +229,7 @@
         weakself.timeLab.text = [NSString stringWithFormat:@"%@",[weakself timeFormatFromSeconds:current]];
         if (current) {
             [weakself.slider setValue:(current/total)];
+            indexF = current;
         }
     }];
 }
@@ -296,6 +301,9 @@
 //    [self.player seekToTime:CMTimeMake(i, 1) completionHandler:^(BOOL finished) {}];
 //}
 
+/**
+ * 点击进度条事件
+ */
 - (void)sliderTapAction:(UITapGestureRecognizer *)sender {
     if (sender.state == 3) {
         CGPoint touchPoint = [sender locationInView:_slider];
@@ -305,13 +313,50 @@
     }
 }
 
+/**
+ * 视频左右滑动事件
+ */
 - (void)panGestureAction:(UIPanGestureRecognizer *)sender {
-    float i = (_slider.value + [sender translationInView:self].x/5000)*(CMTimeGetSeconds([self.player.currentItem duration]));
-    if (sender.state == 2) {
-        [self.player seekToTime:CMTimeMake(i, 1) completionHandler:^(BOOL finished) {}];
+    CGPoint translation = [sender translationInView:self];
+    if ([self DirectionIfNeeded:translation]) {
+        indexF += 1;
+    }else{
+        indexF -= 1;
+    };
+    
+    switch (sender.state) {
+        case 1:
+            [self pause];
+            break;
+        case 2:
+            [self.player seekToTime:CMTimeMake(indexF, 1) completionHandler:^(BOOL finished) {}];
+            break;
+        case 3:
+            [self play];
+            break;
+        default:
+            break;
     }
 }
 
+/**
+ * 左右滑判定
+ */
+- (BOOL)DirectionIfNeeded:(CGPoint)translation {
+    float newPoint = translation.x;
+    if (newPoint > oldPoint) {
+        oldPoint = newPoint;
+        return YES;
+    }else{
+        oldPoint = newPoint;
+        return NO;
+    }
+}
+
+
+/**
+ * 单击面板
+ */
 - (void)singleTapAction:(UITapGestureRecognizer *)sender {
     
     if (tapFlag) {
@@ -323,6 +368,9 @@
     }
 }
 
+/**
+ * 双击面板
+ */
 - (void)doubleTapAction:(UITapGestureRecognizer *)sender {
     if (playState){
         [self pause];
@@ -333,6 +381,9 @@
     }
 }
 
+/**
+ * 上一个按钮
+ */
 - (void)beforeAction:(UITapGestureRecognizer *)sender {
     if (MVindex > 0) {
         MVindex --;
@@ -340,6 +391,9 @@
     [self changeMVindex];
 }
 
+/**
+ * 下一个按钮
+ */
 - (void)afterAction:(UITapGestureRecognizer *)sender {
     if (MVindex < _urlStr.count - 1) {
         MVindex ++;
